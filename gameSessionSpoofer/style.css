@@ -1,0 +1,179 @@
+.vc-game-session-spoofer-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vc-game-session-spoofer-intro {
+    margin: 0;
+}
+
+.vc-game-session-spoofer-results {
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thin-thumb) transparent;
+}
+
+.vc-game-session-spoofer-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-game-session-spoofer-results::-webkit-scrollbar-thumb {
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    background-color: var(--scrollbar-thin-thumb);
+}
+
+.vc-game-session-spoofer-results::-webkit-scrollbar-track,
+.vc-game-session-spoofer-results::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.vc-game-session-spoofer-result {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 12px;
+    border: 0;
+    color: var(--text-default);
+    text-align: left;
+    background: none;
+    cursor: pointer;
+}
+
+.vc-game-session-spoofer-result:hover {
+    background: var(--interactive-background-hover);
+}
+
+.vc-game-session-spoofer-result-name {
+    font-weight: 600;
+}
+
+.vc-game-session-spoofer-result-meta {
+    overflow: hidden;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-game-session-spoofer-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.vc-game-session-spoofer-field {
+    display: grid;
+    grid-template-rows: 36px auto;
+    gap: 4px;
+    min-width: 0;
+}
+
+.vc-game-session-spoofer-field-copy {
+    min-width: 0;
+}
+
+.vc-game-session-spoofer-field-label {
+    margin: 0;
+}
+
+.vc-game-session-spoofer-field-hint {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.vc-game-session-spoofer-checkbox-label {
+    display: block;
+    min-width: 0;
+}
+
+.vc-game-session-spoofer-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-game-session-spoofer-queue-title {
+    margin: 0 0 4px;
+    color: var(--text-muted);
+}
+
+.vc-game-session-spoofer-queue-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+}
+
+.vc-game-session-spoofer-queue-position {
+    flex: 0 0 auto;
+    width: 20px;
+    color: var(--text-muted);
+    text-align: center;
+    font-weight: 600;
+}
+
+.vc-game-session-spoofer-queue-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-game-session-spoofer-queue-control {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    color: var(--interactive-normal);
+    background: none;
+    cursor: pointer;
+}
+
+.vc-game-session-spoofer-queue-control:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.vc-game-session-spoofer-queue-control:hover:not(:disabled) {
+    color: var(--interactive-hover);
+    background: var(--interactive-background-hover);
+}
+
+.vc-game-session-spoofer-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.vc-game-session-spoofer-session-title {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.vc-game-session-spoofer-session-icon {
+    display: block;
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: var(--radius-sm, 8px);
+}
+
+.vc-game-session-spoofer-muted {
+    color: var(--text-muted);
+}
