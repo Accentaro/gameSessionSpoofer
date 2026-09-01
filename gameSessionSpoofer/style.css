@@ -96,14 +96,33 @@
     min-width: 0;
 }
 
+.vc-game-session-spoofer-shuffle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+}
+
+.vc-game-session-spoofer-shuffle .vc-game-session-spoofer-field {
+    grid-template-rows: auto auto;
+}
+
 .vc-game-session-spoofer-queue {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.vc-game-session-spoofer-queue-title {
+.vc-game-session-spoofer-queue-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 4px;
+}
+
+.vc-game-session-spoofer-queue-title {
+    flex: 1;
+    margin: 0;
     color: var(--text-muted);
 }
 

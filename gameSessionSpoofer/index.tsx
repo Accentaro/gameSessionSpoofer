@@ -236,6 +236,22 @@ function moveQueued(index: number, offset: number): void {
     setQueue(next);
 }
 
+function pickShuffledGames(apps: DetectableApp[], count: number, minutes: number): QueuedGame[] {
+    const pool = [...apps];
+
+    for (let index = 0; index < count; index++) {
+        const picked = index + Math.floor(Math.random() * (pool.length - index));
+        [pool[index], pool[picked]] = [pool[picked], pool[index]];
+    }
+
+    return pool.slice(0, count).map(app => ({
+        id: app.id,
+        name: app.name,
+        exeName: executableFor(app),
+        minutes
+    }));
+}
+
 function formatDuration(ms: number): string {
     const totalMinutes = Math.max(0, Math.round(ms / 60_000));
     const hours = Math.floor(totalMinutes / 60);
@@ -298,6 +314,8 @@ function SpooferPanel(): JSX.Element {
     const [selected, setSelected] = useState<DetectableApp | null>(null);
     const [duration, setDuration] = useState("60");
     const [playedFor, setPlayedFor] = useState("0");
+    const [shuffleCount, setShuffleCount] = useState("5");
+    const [queueExpanded, setQueueExpanded] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { creditPlaytime: creditPlaytimeEnabled } = settings.use(["creditPlaytime"]);
     const forceUpdate = useForceUpdater();
@@ -328,6 +346,12 @@ function SpooferPanel(): JSX.Element {
 
     const minutes = parseDuration(duration);
     const backdate = parseDuration(playedFor);
+    const parsedShuffleCount = Number(shuffleCount);
+    const validShuffleCount = Number.isInteger(parsedShuffleCount)
+        && parsedShuffleCount > 0
+        && parsedShuffleCount <= (apps?.length ?? 0)
+        ? parsedShuffleCount
+        : null;
 
     const entry = useMemo<QueuedGame | null>(() =>
         selected == null || minutes == null
@@ -402,6 +426,31 @@ function SpooferPanel(): JSX.Element {
                 </div>
             </div>
 
+            <div className={cl("shuffle")}>
+                <div className={cl("field")}>
+                    <div className={cl("field-copy")}>
+                        <Heading tag="h5" className={cl("field-label")}>Shuffle count</Heading>
+                        <span className={cl("field-hint")}>
+                            Input amount of games below, set duration od each game above. (Infinite does not work here obviously)
+                        </span>
+                    </div>
+                    <TextInput
+                        value={shuffleCount}
+                        onChange={setShuffleCount}
+                    />
+                </div>
+                <Button
+                    variant="secondary"
+                    disabled={apps == null || minutes == null || minutes === 0 || validShuffleCount == null || !queueAcceptsMore}
+                    onClick={() => {
+                        if (apps == null || minutes == null || minutes === 0 || validShuffleCount == null || !queueAcceptsMore) return;
+                        act(() => setQueue([...queue, ...pickShuffledGames(apps, validShuffleCount, minutes)]));
+                    }}
+                >
+                    Shuffle
+                </Button>
+            </div>
+
             <Checkbox
                 value={creditPlaytimeEnabled}
                 onChange={(_event, checked) => { settings.store.creditPlaytime = checked; }}
@@ -442,11 +491,24 @@ function SpooferPanel(): JSX.Element {
 
             {queue.length > 0 && (
                 <div className={cl("queue")}>
-                    <Heading tag="h5" className={cl("queue-title")}>
-                        Up next · {queue.length} queued
-                        {queueAcceptsMore && `, ${formatMinutes(queue.reduce((total, queued) => total + queued.minutes, 0))} total`}
-                    </Heading>
-                    {queue.map((queued, index) => {
+                    <div className={cl("queue-header")}>
+                        <Heading tag="h5" className={cl("queue-title")}>
+                            Up next · {queue.length} queued
+                            {queueAcceptsMore && `, ${formatMinutes(queue.reduce((total, queued) => total + queued.minutes, 0))} total`}
+                        </Heading>
+                        <button
+                            className={cl("queue-control")}
+                            type="button"
+                            aria-expanded={queueExpanded}
+                            aria-label={queueExpanded ? "Collapse queue" : "Expand queue"}
+                            onClick={() => setQueueExpanded(expanded => !expanded)}
+                        >
+                            {queueExpanded
+                                ? <ChevronSmallUpIcon height={16} width={16} />
+                                : <ChevronSmallDownIcon height={16} width={16} />}
+                        </button>
+                    </div>
+                    {queueExpanded && queue.map((queued, index) => {
                         const startsIn = queueStartsIn(index);
 
                         return (
