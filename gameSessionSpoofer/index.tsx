@@ -22,7 +22,7 @@ import { useForceUpdater } from "@utils/react";
 import definePlugin, { OptionType } from "@utils/types";
 import type { Application, RenderModalProps, RunningGame } from "@vencord/discord-types";
 import { findByPropsLazy, findStoreLazy, onceReady } from "@webpack";
-import { ApplicationStore, Checkbox, FluxDispatcher, IconUtils, Modal, openModal, showToast, TextInput, Toasts, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
+import { ApplicationStore, Checkbox, FluxDispatcher, IconUtils, Modal, openModal, showToast, TextInput, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
 import type { JSX } from "react";
 
 import { creditPlaytime, fingerprintFor } from "./science";
@@ -146,7 +146,7 @@ function creditSession(finished: Session): void {
     creditPlaytime(game, Date.now() - game.start)
         .catch(error => {
             logger.error(`Failed to credit playtime for ${game.name}`, error);
-            showToast(`Could not credit your ${game.name} playtime.`, Toasts.Type.FAILURE);
+            showToast({ text: `Could not credit your ${game.name} playtime.`, variant: "critical" });
         });
 }
 
@@ -204,7 +204,7 @@ function advanceQueue(from: number): void {
 
         if (endsAt === 0 || endsAt > Date.now()) {
             applySession({ game: buildGame(next, from), endsAt });
-            showToast(`Now playing ${next.name}.`, Toasts.Type.SUCCESS);
+            showToast({ text: `Now playing ${next.name}.`, variant: "success" });
             return;
         }
 
@@ -213,7 +213,7 @@ function advanceQueue(from: number): void {
 
     const finished = session;
     stopSession();
-    if (finished != null) showToast(`Stopped playing ${finished.game.name}.`, Toasts.Type.MESSAGE);
+    if (finished != null) showToast({ text: `Stopped playing ${finished.game.name}.`, variant: "default" });
 }
 
 function startNow(entry: QueuedGame, playedForMinutes: number): void {
@@ -224,7 +224,7 @@ function startNow(entry: QueuedGame, playedForMinutes: number): void {
         endsAt: entry.minutes === 0 ? 0 : now + entry.minutes * 60_000
     });
 
-    showToast(`Now playing ${entry.name}.`, Toasts.Type.SUCCESS);
+    showToast({ text: `Now playing ${entry.name}.`, variant: "success" });
 }
 
 function moveQueued(index: number, offset: number): void {
