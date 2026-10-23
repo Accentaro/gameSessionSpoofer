@@ -49,7 +49,7 @@ interface DetectableApp {
     executables?: DetectableExecutable[];
 }
 
-interface SpoofedGame extends RunningGame {
+interface SpoofedGame extends Omit<RunningGame, "distributor"> {
     id: string;
     pid: number;
     exeName: string;
@@ -118,7 +118,6 @@ function buildGame({ id, name, exeName }: Pick<QueuedGame, "id" | "name" | "exeN
         exeName,
         exePath: `c:/program files/${folder}/${exeName}`,
         cmdLine: `c:/program files/${folder}/${exeName}`,
-        distributor: "",
         processName: name,
         pid,
         pidPath: [pid],
