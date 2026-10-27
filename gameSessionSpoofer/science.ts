@@ -12,7 +12,9 @@ import { RestAPI } from "@webpack/common";
 const SCIENCE_URL = "/science";
 const ME_URL = "/users/@me";
 const TOKEN_MAX_AGE = 12 * 60 * 60 * 1_000;
-const MIN_DURATION_MS = 60_000;
+// Discord's RunningGameHeartbeatManager reports every 5 minutes, each heartbeat carrying only the time since the last one
+export const HEARTBEAT_INTERVAL_MS = 5 * 60_000;
+const EVENTS_PER_REQUEST = 100;
 
 const SuperProperties: { getSuperProperties(): Record<string, any>; } = findByPropsLazy("getSuperProperties");
 const RunningGameStore: {
@@ -29,9 +31,17 @@ export interface CreditableGame {
     exeName: string;
 }
 
+export interface PlaytimeCredit {
+    gameSession: string;
+    creditedUntil: number;
+    launched: boolean;
+    finished: boolean;
+}
+
 let analyticsToken = "";
 let analyticsTokenFetchedAt = 0;
 let sequence = 0;
+let reports: Promise<void> = Promise.resolve();
 const fingerprints = new Map<string, string>();
 
 export function fingerprintFor(gameId: string): string {
@@ -125,7 +135,7 @@ function buildLaunch(game: CreditableGame, fingerprint: string, at: number): Rec
     return { type: "launch_game", properties };
 }
 
-function buildHeartbeat(game: CreditableGame, durationMs: number, gameSession: string, initial: boolean, at: number): Record<string, any> {
+function buildHeartbeat(game: CreditableGame, durationMs: number, gameSession: string, initial: boolean, final: boolean, at: number): Record<string, any> {
     const { heartbeatSession, launchSignature } = clientSession();
 
     return {
@@ -140,11 +150,12 @@ function buildHeartbeat(game: CreditableGame, durationMs: number, gameSession: s
             game_executable: game.exeName,
             game_detection_enabled: true,
             initial_heartbeat: initial,
-            final_heartbeat: !initial,
+            final_heartbeat: final,
             game_session_id: gameSession,
-            duration_tracked_ms: durationMs,
+            duration_tracked_ms: Math.round(durationMs),
             rtc_connection_id: null,
             media_session_id: null,
+            discord_window_state: "focused",
             launch_signature: launchSignature,
             client_app_state: "focused",
             client_send_timestamp: at
@@ -152,27 +163,45 @@ function buildHeartbeat(game: CreditableGame, durationMs: number, gameSession: s
     };
 }
 
-export async function creditPlaytime(game: CreditableGame, durationMs: number): Promise<void> {
-    const duration = Math.floor(durationMs);
-    if (duration < MIN_DURATION_MS) return;
+export function newCredit(startedAt: number): PlaytimeCredit {
+    return { gameSession: crypto.randomUUID(), creditedUntil: startedAt, launched: false, finished: false };
+}
 
-    const fingerprint = fingerprintFor(game.id);
+async function sendCredit(game: CreditableGame, credit: PlaytimeCredit, final: boolean): Promise<void> {
+    if (credit.finished) return;
+
+    const until = Date.now();
+    const events: Record<string, any>[] = [];
+    let at = credit.creditedUntil;
+
+    if (!credit.launched) {
+        events.push(
+            buildLaunch(game, fingerprintFor(game.id), at),
+            buildHeartbeat(game, 0, credit.gameSession, true, false, at)
+        );
+    }
+
+    // Backdated or missed time goes out as native-sized slices instead of one oversized heartbeat
+    while (until - at > HEARTBEAT_INTERVAL_MS) {
+        at += HEARTBEAT_INTERVAL_MS;
+        events.push(buildHeartbeat(game, HEARTBEAT_INTERVAL_MS, credit.gameSession, false, false, at));
+    }
+    if (final || until > at) events.push(buildHeartbeat(game, until - at, credit.gameSession, false, final, until));
+
     const token = await getAnalyticsToken();
-    const gameSession = crypto.randomUUID();
-    const now = Date.now();
-    const startedAt = now - duration > 0 ? now - duration : now;
+    for (let index = 0; index < events.length; index += EVENTS_PER_REQUEST) {
+        await RestAPI.post({ url: SCIENCE_URL, body: { token, events: events.slice(index, index + EVENTS_PER_REQUEST) } });
+    }
 
-    await RestAPI.post({
-        url: SCIENCE_URL,
-        body: {
-            token,
-            events: [
-                buildHeartbeat(game, 0, gameSession, true, startedAt),
-                buildLaunch(game, fingerprint, startedAt),
-                buildHeartbeat(game, duration, gameSession, false, now)
-            ]
-        }
-    });
+    logger.debug(`Credited ${Math.round((until - credit.creditedUntil) / 60_000)}m of ${game.name}`);
+    credit.launched = true;
+    credit.creditedUntil = until;
+    credit.finished = final;
+}
 
-    logger.info(`Credited ${Math.round(duration / 60_000)}m of ${game.name} to your profile`);
+/** Reports the time since the last report, one request at a time so slices never overlap. */
+export function reportPlaytime(game: CreditableGame, credit: PlaytimeCredit, final = false): Promise<void> {
+    const report = reports.then(() => sendCredit(game, credit, final));
+    reports = report.catch(() => { });
+    return report;
 }
